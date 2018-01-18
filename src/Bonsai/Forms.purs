@@ -1,6 +1,5 @@
 module Bonsai.Forms
-  ( Form
-  , Fieldset
+  ( Fieldset
   , TextInput
   , Input(..)
   , FormDef
@@ -33,10 +32,6 @@ import Data.Maybe (Maybe(..))
 --
 --
 
-type Form =
-  { content :: FormDefT
-  }
-
 type Fieldset =
   { name :: Maybe String
   , legend :: Maybe String
@@ -56,7 +51,7 @@ data Input
   = InputTextInput TextInput
 
 data FormDefF a
-  = FormF Form a
+  = FormF Fieldset a
   | FieldsetF Fieldset a
   | InputF Input a
   | EmptyF a
@@ -89,17 +84,17 @@ mkTextInput name label =
   , placeholder: Nothing
   }
 
-form :: FormDefT -> FormDefT
-form content =
-  liftF $ FormF { content } unit
-
-textInput :: TextInput -> FormDefT
-textInput ti =
-  liftF $ InputF (InputTextInput ti) unit
+form :: Maybe String -> Maybe String -> FormDefT -> FormDefT
+form name legend content =
+  liftF $ FormF { name, legend, content } unit
 
 fieldset :: Maybe String -> Maybe String -> FormDefT -> FormDefT
 fieldset name legend content =
     liftF $ FieldsetF { name, legend, content } unit
+
+textInput :: TextInput -> FormDefT
+textInput ti =
+  liftF $ InputF (InputTextInput ti) unit
 
 
 --
