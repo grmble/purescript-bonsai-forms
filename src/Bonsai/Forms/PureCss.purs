@@ -3,7 +3,7 @@ where
 
 import Prelude
 
-import Bonsai.Forms (FormDef, FormDefF(InputF, FieldsetF, FormF, EmptyF), FormModel(FormModel), FormMsg(FormCancel, FormOK, FormModelSet), Input(InputTextInput))
+import Bonsai.Forms (FormDef, FormDefF(..), FormModel(..), FormMsg(..), Input(..))
 import Bonsai.Html as H
 import Bonsai.Html.Attributes as A
 import Bonsai.Html.Events as E
@@ -62,13 +62,28 @@ alignedForm idPrefix (FormModel model) content =
       H.div H.! A.cls "pure-control-group" $ do
         H.label H.! A.for id $ H.text ti.label
         H.input H.! A.id id
-          H.! E.onInput (\s -> FormModelSet n s)
+          H.! E.onInput (FormPut n)
           H.! E.onKeyEnterEscape (const FormOK) (const FormCancel)
           H.! A.value (fromMaybe "" (lookup n model))
           H.!? (A.placeholder <$> ti.placeholder)
           H.! A.required ti.required
+          H.!? (A.pattern <$> ti.pattern)
           H.! A.typ "text"
       pure x
+
+    transformF ns (InputF (InputCheckboxInput ci) x) = do
+      let n = intercalate "_" (snoc ns ci.name)
+      let id = withIdPrefix n
+      H.div H.! A.cls "pure-controls" $ do
+        H.label H.! A.for id  H.! A.cls "pure-checkbox" $ do
+          H.input H.! A.id id
+            -- onChange ???
+            H.! E.onCheckedInput (FormPutB n)
+            H.! A.typ "checkbox"
+            H.! A.checked false
+          H.text ci.label
+      pure x
+
 
     withLegend c s =
       (H.legend $ H.text s) *> c

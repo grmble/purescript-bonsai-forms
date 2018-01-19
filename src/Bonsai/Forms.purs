@@ -1,12 +1,14 @@
 module Bonsai.Forms
   ( Fieldset
   , TextInput
+  , CheckboxInput
   , Input(..)
   , FormDef
   , FormDefF(..)
   , FormDefT
   , FormMsg(..)
   , FormModel(..)
+  , checkboxInput
   , mkTextInput
   , form
   , fieldset
@@ -22,7 +24,7 @@ import Bonsai (UpdateResult, plainResult)
 import Control.Monad.Free (Free, liftF)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Map (Map, empty, insert)
+import Data.Map (Map, delete, empty, insert)
 import Data.Maybe (Maybe(..))
 
 
@@ -47,8 +49,14 @@ type TextInput =
   , placeholder :: Maybe String
   }
 
+type CheckboxInput =
+  { name :: String
+  , label :: String
+  }
+
 data Input
   = InputTextInput TextInput
+  | InputCheckboxInput CheckboxInput
 
 data FormDefF a
   = FormF Fieldset a
@@ -96,6 +104,9 @@ textInput :: TextInput -> FormDefT
 textInput ti =
   liftF $ InputF (InputTextInput ti) unit
 
+checkboxInput :: String -> String -> FormDefT
+checkboxInput name label =
+  liftF $ InputF (InputCheckboxInput { name, label }) unit
 
 --
 --
@@ -103,7 +114,8 @@ textInput ti =
 --
 --
 data FormMsg
-  = FormModelSet String String
+  = FormPut String String
+  | FormPutB String Boolean
   | FormOK
   | FormCancel
 
@@ -121,7 +133,11 @@ updateForm :: forall eff. FormModel -> FormMsg -> UpdateResult eff FormModel For
 updateForm (FormModel model) msg =
   plainResult $ FormModel $
     case msg of
-      FormModelSet k v ->
+      FormPut k v ->
          insert k v model
+      FormPutB k b ->
+        if b
+          then insert k "on" model
+          else delete k model
       _ ->
         model
