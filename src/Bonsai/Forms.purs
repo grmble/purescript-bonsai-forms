@@ -9,6 +9,8 @@ module Bonsai.Forms
   , FormModel(..)
   , form
   , fieldset
+  , withMessage
+  , withLegend
   , textInput
   , checkboxInput
   , emptyFormModel
@@ -20,11 +22,11 @@ import Prelude
 
 import Bonsai (UpdateResult, plainResult)
 import Bonsai.VirtualDom as VD
-import Control.Monad.Free (Free, liftF)
+import Control.Monad.Free (Free, hoistFree, liftF)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Map (Map, delete, empty, insert)
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 
 
 --
@@ -43,6 +45,7 @@ type Input =
   { typ :: InputTyp
   , name :: String
   , label :: String
+  , message :: Maybe String
   , attribs :: Array (VD.Property FormMsg)
   }
 
@@ -71,17 +74,37 @@ type FormDefT = FormDef Unit
 --
 --
 
-form :: String -> Maybe String -> FormDefT -> FormDefT
-form name legend content =
-  liftF $ FormF { name, legend, content } unit
+form :: String -> FormDefT -> FormDefT
+form name content =
+  liftF $ FormF { name, legend: Nothing, content } unit
 
-fieldset :: String -> Maybe String -> FormDefT -> FormDefT
-fieldset name legend content =
-  liftF $ FieldsetF { name, legend, content } unit
+fieldset :: String -> FormDefT -> FormDefT
+fieldset name content =
+  liftF $ FieldsetF { name, legend: Nothing, content } unit
 
 input :: InputTyp -> String -> String -> Array (VD.Property FormMsg) -> FormDefT
 input typ name label attribs =
-  liftF $ InputF { typ, name, label, attribs } unit
+  liftF $ InputF { typ, name, label, message: Nothing, attribs } unit
+
+withMessage :: FormDefT -> String -> FormDefT
+withMessage elem s =
+  hoistFree go elem
+  where
+    go :: FormDefF ~> FormDefF
+    go (InputF i x) =
+      InputF (i { message = Just s }) x
+    go x = x
+
+withLegend :: (FormDefT -> FormDefT) -> String -> FormDefT -> FormDefT
+withLegend efn s elem =
+  hoistFree go (efn elem)
+  where
+    go :: FormDefF ~> FormDefF
+    go (FieldsetF fs x) =
+      FieldsetF (fs { legend = Just s }) x
+    go (FormF frm x) =
+      FormF (frm { legend = Just s }) x
+    go x = x
 
 textInput :: String -> String -> Array (VD.Property FormMsg) -> FormDefT
 textInput =

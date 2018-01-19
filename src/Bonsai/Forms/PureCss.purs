@@ -4,13 +4,13 @@ where
 import Prelude
 
 import Bonsai.Forms (FormDef, FormDefF(..), FormModel(..), FormMsg(..), InputTyp(..))
-import Bonsai.VirtualDom as VD
 import Bonsai.Html as H
 import Bonsai.Html.Attributes as A
 import Bonsai.Html.Events as E
+import Bonsai.VirtualDom as VD
 import Control.Monad.Free (substFree)
 import Data.CatList (CatList, empty, snoc)
-import Data.Foldable (intercalate)
+import Data.Foldable (intercalate, traverse_)
 import Data.Map (lookup)
 import Data.Maybe (Maybe, fromMaybe, maybe)
 
@@ -37,7 +37,7 @@ alignedForm idPrefix (FormModel model) content =
       H.form H.! A.cls "pure-form pure-form-aligned"
         H.! E.onSubmit (const FormOK) $ do
           H.fieldset $ do
-            maybe c (withLegend c) f.legend
+            maybe c (insertLegend c) f.legend
             H.div H.! A.cls "pure-controls" $ do
               H.button
                 H.! A.typ "submit"
@@ -53,12 +53,12 @@ alignedForm idPrefix (FormModel model) content =
       let ns' = snoc ns f.name
       let c = transform ns' f.content
       H.fieldset $ do
-        maybe c (withLegend c) f.legend
+        maybe c (insertLegend c) f.legend
       pure x
 
     transformF ns (InputF i x) = do
       let n = intercalate "_" (snoc ns i.name)
-      let id = withIdPrefix n
+      let id = prefix n
       case i.typ of
         IText ->
           transformText n id i
@@ -78,6 +78,9 @@ alignedForm idPrefix (FormModel model) content =
             , A.value (fromMaybe "" (lookup n model))
             , A.typ "text" ] )
           [ ]
+        traverse_
+          (\s -> H.span H.! A.cls "pure-form-message-inline" $ H.text s)
+          i.message
 
     transformCB n id i = do
       H.div H.! A.cls "pure-controls" $ do
@@ -86,16 +89,19 @@ alignedForm idPrefix (FormModel model) content =
             ( i.attribs <>
               [ A.typ "checkbox"
               , A.id id
-              , E.onCheckedInput (FormPutB n)
+              , E.onCheckedChange (FormPutB n)
               , A.checked (maybe false (const true) (lookup n model))
               ] )
             [ ]
           H.text (" " <> i.label)
+        traverse_
+          (\s -> H.span H.! A.cls "pure-form-message-inline" $ H.text s)
+          i.message
 
-    withLegend c s =
+    insertLegend c s =
       (H.legend $ H.text s) *> c
 
-    withIdPrefix n =
+    prefix n =
       maybe n
         (\p -> intercalate "_" [ p, n ])
         idPrefix
