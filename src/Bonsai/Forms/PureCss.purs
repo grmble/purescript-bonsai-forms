@@ -44,6 +44,7 @@ alignedForm idPrefix (FormModel model) content =
                 H.! A.cls "pure-button pure-button-primary" $
                 H.text "OK"
               H.button
+                H.! A.typ "button"
                 H.! A.cls "pure-button"
                 H.! E.onClick FormCancel $
                 H.text "Cancel"
@@ -74,7 +75,6 @@ alignedForm idPrefix (FormModel model) content =
             [ A.typ "text"
             , A.id id
             , E.onInput (FormPut n)
-            , E.onKeyEnterEscape (const FormOK) (const FormCancel)
             , A.value (fromMaybe "" (lookup n model))
             , A.typ "text" ] )
           [ ]
