@@ -1,18 +1,16 @@
 module Bonsai.Forms
   ( Fieldset
-  , TextInput
-  , CheckboxInput
-  , Input(..)
+  , Input
+  , InputTyp(..)
   , FormDef
   , FormDefF(..)
   , FormDefT
   , FormMsg(..)
   , FormModel(..)
-  , checkboxInput
-  , mkTextInput
   , form
   , fieldset
   , textInput
+  , checkboxInput
   , emptyFormModel
   , updateForm
   )
@@ -21,11 +19,12 @@ where
 import Prelude
 
 import Bonsai (UpdateResult, plainResult)
+import Bonsai.VirtualDom as VD
 import Control.Monad.Free (Free, liftF)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Map (Map, delete, empty, insert)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
 
 
 --
@@ -35,28 +34,21 @@ import Data.Maybe (Maybe(..))
 --
 
 type Fieldset =
-  { name :: Maybe String
+  { name :: String
   , legend :: Maybe String
   , content :: FormDefT
   }
 
-type TextInput =
-  { name :: String
+type Input =
+  { typ :: InputTyp
+  , name :: String
   , label :: String
-  , required :: Boolean
-  , pattern :: Maybe String
-  , title :: Maybe String
-  , placeholder :: Maybe String
+  , attribs :: Array (VD.Property FormMsg)
   }
 
-type CheckboxInput =
-  { name :: String
-  , label :: String
-  }
-
-data Input
-  = InputTextInput TextInput
-  | InputCheckboxInput CheckboxInput
+data InputTyp
+  = IText
+  | ICheckbox
 
 data FormDefF a
   = FormF Fieldset a
@@ -79,34 +71,25 @@ type FormDefT = FormDef Unit
 --
 --
 
-mkTextInput
-  :: String
-  -> String
-  -> TextInput
-mkTextInput name label =
-  { name: name
-  , label: label
-  , required: false
-  , pattern: Nothing
-  , title: Nothing
-  , placeholder: Nothing
-  }
-
-form :: Maybe String -> Maybe String -> FormDefT -> FormDefT
+form :: String -> Maybe String -> FormDefT -> FormDefT
 form name legend content =
   liftF $ FormF { name, legend, content } unit
 
-fieldset :: Maybe String -> Maybe String -> FormDefT -> FormDefT
+fieldset :: String -> Maybe String -> FormDefT -> FormDefT
 fieldset name legend content =
-    liftF $ FieldsetF { name, legend, content } unit
+  liftF $ FieldsetF { name, legend, content } unit
 
-textInput :: TextInput -> FormDefT
-textInput ti =
-  liftF $ InputF (InputTextInput ti) unit
+input :: InputTyp -> String -> String -> Array (VD.Property FormMsg) -> FormDefT
+input typ name label attribs =
+  liftF $ InputF { typ, name, label, attribs } unit
 
-checkboxInput :: String -> String -> FormDefT
-checkboxInput name label =
-  liftF $ InputF (InputCheckboxInput { name, label }) unit
+textInput :: String -> String -> Array (VD.Property FormMsg) -> FormDefT
+textInput =
+  input IText
+
+checkboxInput :: String -> String -> Array (VD.Property FormMsg) -> FormDefT
+checkboxInput =
+  input ICheckbox
 
 --
 --
