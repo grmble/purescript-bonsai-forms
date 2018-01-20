@@ -63,7 +63,6 @@ type Input =
 -- multiple controls with the same name
 type Grouped =
   { typ :: InputTyp
-  , default :: Maybe String
   , name :: String
   , message :: Maybe String
   , inputs :: Array (Tuple String String)
@@ -120,9 +119,9 @@ input :: InputTyp -> String -> String -> Array (VD.Property FormMsg) -> FormDefT
 input typ name label attribs =
   liftF $ InputF { typ, name, label, message: Nothing, attribs } unit
 
-grouped :: InputTyp -> Maybe String -> String -> Array (Tuple String String) -> FormDefT
-grouped typ default name inputs =
-  liftF $ GroupedF { typ, default, name, message: Nothing, inputs } unit
+grouped :: InputTyp -> String -> Array (Tuple String String) -> FormDefT
+grouped typ name inputs =
+  liftF $ GroupedF { typ, name, message: Nothing, inputs } unit
 
 withMessage :: FormDefT -> String -> FormDefT
 withMessage elem s =
@@ -152,11 +151,11 @@ textInput =
 
 checkboxInput :: String -> Array (Tuple String String) -> FormDefT
 checkboxInput =
-  grouped ICheckbox Nothing
+  grouped ICheckbox
 
-radioInput :: String -> String -> Array (Tuple String String) -> FormDefT
-radioInput n def =
-  grouped IRadio (Just def) n
+radioInput :: String -> Array (Tuple String String) -> FormDefT
+radioInput =
+  grouped IRadio
 
 --
 --
@@ -194,13 +193,18 @@ updateForm model msg =
       _ ->
         model
 
+
+-- XXX need better name for these model functions
 set :: String -> String -> FormModel -> FormModel
 set k v model =
   M.insert k (NEL.singleton v) model
 
 insert :: String -> String -> FormModel -> FormModel
 insert k v model =
-  M.alter (myAdd v) k model
+  -- sometimes the checkboxes/radios are bugging out
+  -- we want to keep the model clean ...
+  M.alter (myAdd v) k
+    (remove k v model)
 
   where
     myAdd s Nothing =
@@ -216,7 +220,8 @@ remove k v model =
     myRemove s (Nothing) =
       Nothing
     myRemove s (Just nel) =
-      NEL.fromList $ L.delete s (NEL.toList nel)
+      NEL.fromList $ L.filter (\x -> s /= x) (NEL.toList nel)
+
 
 lookup :: String -> FormModel -> Maybe String
 lookup k model =

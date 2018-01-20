@@ -11,10 +11,8 @@ import Bonsai.VirtualDom as VD
 import Control.Monad.Free (substFree)
 import Data.CatList (CatList, empty, snoc)
 import Data.Foldable (for_, intercalate)
-import Data.List.NonEmpty as NEL
-import Data.Map as M
 import Data.Maybe (Maybe, fromMaybe, maybe)
-import Data.Tuple (Tuple(..), fst, snd)
+import Data.Tuple (fst, snd)
 
 
 type NameStack =
@@ -74,7 +72,7 @@ alignedForm idPrefix model content =
       let n = intercalate "_" (snoc ns g.name)
 
       H.div H.! A.cls "pure-controls" $ do
-        transformGrouped n g.default g.typ g.inputs
+        transformGrouped n g.typ g.inputs
         appendMessage g.message
       pure x
 
@@ -91,16 +89,14 @@ alignedForm idPrefix model content =
           [ ]
         appendMessage i.message
 
-    transformGrouped n def typ inputs = do
-      let def' = map (\v -> Tuple n (NEL.singleton v)) def
-      let model' = M.union model (M.fromFoldable def')
+    transformGrouped n typ inputs = do
       for_ inputs \tup ->
         H.label H.! A.cls ("pure-" <> show typ) $ do
           H.vnode $ VD.node "input"
             [ A.typ (show typ)
             , A.name n
             , E.onCheckedChange (changeHandler tup)
-            , A.checked (lookupChecked n (fst tup) model')
+            , A.checked (lookupChecked n (fst tup) model)
             , A.value (fst tup)
             ]
             [ ]
