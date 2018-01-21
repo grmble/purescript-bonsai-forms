@@ -12,7 +12,7 @@ import Control.Monad.Free (substFree)
 import Data.CatList (CatList, empty, snoc)
 import Data.Foldable (for_, intercalate)
 import Data.Maybe (Maybe, fromMaybe, maybe)
-import Data.Tuple (fst, snd)
+import Data.Tuple (Tuple(..), fst, snd)
 
 
 type NameStack =
@@ -34,20 +34,28 @@ alignedForm idPrefix model content =
     transformF ns (FormF f x) = do
       let ns' = snoc ns f.name
       let c = transform ns' f.content
-      H.form H.! A.cls "pure-form pure-form-aligned"
-        H.! E.onSubmit FormOK $ do
-          H.fieldset $ do
-            maybe c (insertLegend c) f.legend
-            H.div H.! A.cls "pure-controls" $ do
-              H.button
-                H.! A.typ "submit"
-                H.! A.cls "pure-button pure-button-primary" $
-                H.text "OK"
-              H.button
-                H.! A.typ "button"
-                H.! A.cls "pure-button"
-                H.! E.onClick FormCancel $
-                H.text "Cancel"
+      let n = intercalate "_" ns'
+
+      -- the keyedElement guards against weirdness with
+      -- input element reuse by the virtual dom
+      H.keyedElement "form"
+        [ A.cls "pure-form pure-form-aligned"
+        , E.onSubmit FormOK
+        ]
+        [ Tuple n $ H.render $
+            H.fieldset $ do
+              maybe c (insertLegend c) f.legend
+              H.div H.! A.cls "pure-controls" $ do
+                H.button
+                  H.! A.typ "submit"
+                  H.! A.cls "pure-button pure-button-primary" $
+                  H.text "OK"
+                H.button
+                  H.! A.typ "button"
+                  H.! A.cls "pure-button"
+                  H.! E.onClick FormCancel $
+                  H.text "Cancel"
+        ]
       pure x
 
     transformF ns (FieldsetF f x) = do
