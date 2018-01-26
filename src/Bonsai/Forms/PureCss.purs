@@ -75,11 +75,20 @@ alignedForm idPrefix model content =
       let id = prefix n
       case i.typ of
         IText -> do
-          transformText n id i
+          transformInput n id i
           pure x
-        _ ->
-          -- others handled by GroupedF
+        INumber -> do
+          transformInput n id i
           pure x
+        IDate -> do
+          transformInput n id i
+          pure x
+        -- these are handled by GroupedF
+        IRadio ->
+          pure x
+        ICheckbox ->
+          pure x
+
 
     transformF ns (GroupedF g x) = do
       let n = intercalate "_" (CL.snoc ns g.name)
@@ -89,11 +98,11 @@ alignedForm idPrefix model content =
         transformMessage g.message
       pure x
 
-    transformText n id i = do
+    transformInput n id i = do
       H.div H.! A.cls "pure-control-group" $ do
         H.label H.! A.for id $ H.text i.label
         (H.input `withAttributes` i.attribs) H.!
-          A.typ "text" H.!
+          A.typ (show i.typ) H.!
           A.id id H.!
           E.onInput (FormSet n) H.!
           A.value (fromMaybe "" (lookup n model))

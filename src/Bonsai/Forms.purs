@@ -15,6 +15,8 @@ module Bonsai.Forms
   , withMessage
   , withLegend
   , textInput
+  , numberInput
+  , dateInput
   , checkboxInput
   , radioInput
   , withAttribute
@@ -82,12 +84,16 @@ type Grouped =
 
 data InputTyp
   = IText
+  | INumber
+  | IDate
   | ICheckbox
   | IRadio
 
 instance showInputTyp :: Show InputTyp where
   show i = case i of
     IText -> "text"
+    INumber -> "number"
+    IDate -> "date"
     ICheckbox -> "checkbox"
     IRadio -> "radio"
 
@@ -167,6 +173,13 @@ radioInput :: String -> Array (Tuple String String) -> FormDefT
 radioInput =
   grouped IRadio
 
+numberInput :: String -> String -> FormDefT
+numberInput =
+  input INumber
+
+dateInput :: String -> String -> FormDefT
+dateInput =
+  input IDate
 
 --
 --
@@ -245,6 +258,8 @@ updateForm model msg =
 -- checkbox models operate like sets, but those
 -- functions are named insert/remove.
 -- set isnt a set, but it sets ... confused yet?
+--
+-- Bonsai.Forms.Model, s/set/put/ ?
 set :: String -> String -> FormModel -> FormModel
 set k v model =
   M.insert k (NEL.singleton v) model
