@@ -8,7 +8,8 @@ module Bonsai.Forms
   , FormDefT
   , FormMsg(..)
   , FormModel(..)
-  , Prop(..)
+  , class HasAttribute
+  , (!)
   , form
   , fieldset
   , withMessage
@@ -16,6 +17,8 @@ module Bonsai.Forms
   , textInput
   , checkboxInput
   , radioInput
+  , withAttribute
+  , withAttributes
   , emptyFormModel
   , updateForm
   , set
@@ -25,19 +28,19 @@ module Bonsai.Forms
   , lookup
   , multiLookup
   , lookupChecked
-  , toProperty
-  , combineClasses
   )
 where
 
 import Prelude
 
 import Bonsai (UpdateResult, plainResult)
-import Bonsai.Html.Attributes as HA
+import Bonsai.Html (MarkupT)
 import Bonsai.Html.Internal as HI
+import Bonsai.VirtualDom (Property)
 import Bonsai.VirtualDom as VD
 import Control.Monad.Free (Free, hoistFree, liftF)
-import Data.Array as A
+import Data.CatList as CL
+import Data.Foldable (foldl)
 import Data.List as L
 import Data.List.NonEmpty as NEL
 import Data.Map as M
@@ -54,7 +57,7 @@ import Data.Tuple (Tuple)
 type Fieldset =
   { name :: String
   , legend :: Maybe String
-  , props :: Array Prop -- only ClassList
+  , attribs :: CL.CatList (Property FormMsg)
   , content :: FormDefT
   }
 
@@ -63,7 +66,7 @@ type Input =
   , name :: String
   , label :: String
   , message :: Maybe String
-  , props :: Array Prop
+  , attribs :: CL.CatList (Property FormMsg)
   }
 
 -- for radios and checkboxes
@@ -72,17 +75,10 @@ type Grouped =
   { typ :: InputTyp
   , name :: String
   , message :: Maybe String
-  , props :: Array Prop -- only ClassList
+  , attribs :: CL.CatList (Property FormMsg)
   , inputs :: Array (Tuple String String)
   }
 
-data Prop
-  = Required Boolean
-  | Disabled Boolean
-  | Readonly Boolean
-  | Pattern String
-  | ClassList (Array String)
-  | Autocomplete String
 
 data InputTyp
   = IText
@@ -120,11 +116,11 @@ type FormDefT = FormDef Unit
 
 form :: String -> FormDefT -> FormDefT
 form name content =
-  liftF $ FormF { name, content, legend: Nothing, props: [] } unit
+  liftF $ FormF { name, content, legend: Nothing, attribs: CL.empty } unit
 
 fieldset :: String -> FormDefT -> FormDefT
 fieldset name content =
-  liftF $ FieldsetF { name, content, legend: Nothing, props: [] } unit
+  liftF $ FieldsetF { name, content, legend: Nothing, attribs: CL.empty } unit
 
 withMessage :: FormDefT -> String -> FormDefT
 withMessage elem s =
@@ -148,29 +144,18 @@ withLegend efn s elem =
       FormF (frm { legend = Just s }) x
     go x = x
 
-withClasses :: (FormDefT -> FormDefT) -> Array String -> FormDefT -> FormDefT
-withClasses efn cs elem =
-  hoistFree go (efn elem)
-  where
-    go :: FormDefF ~> FormDefF
-    go e = case e of
-      FieldsetF a x -> FieldsetF (a { props = A.snoc a.props (ClassList cs)}) x
-      FormF a x -> FormF (a { props = A.snoc a.props (ClassList cs)}) x
-      GroupedF a x -> GroupedF (a { props = A.snoc a.props (ClassList cs)}) x
-      InputF a x -> InputF (a { props = A.snoc a.props (ClassList cs)}) x
-      EmptyF x -> EmptyF x
 
-input :: InputTyp -> String -> String -> Array Prop -> FormDefT
-input typ name label props =
-  liftF $ InputF { typ, name, label, props, message: Nothing } unit
+input :: InputTyp -> String -> String -> FormDefT
+input typ name label =
+  liftF $ InputF { typ, name, label, attribs: CL.empty, message: Nothing } unit
 
 
 grouped :: InputTyp -> String -> Array (Tuple String String) -> FormDefT
 grouped typ name inputs =
-  liftF $ GroupedF { typ, name, inputs, props: [], message: Nothing } unit
+  liftF $ GroupedF { typ, name, inputs, attribs: CL.empty, message: Nothing } unit
 
 
-textInput :: String -> String -> Array Prop -> FormDefT
+textInput :: String -> String -> FormDefT
 textInput =
   input IText
 
@@ -181,6 +166,44 @@ checkboxInput =
 radioInput :: String -> Array (Tuple String String) -> FormDefT
 radioInput =
   grouped IRadio
+
+
+--
+--
+-- HasAttribute / ! syntax like in Bonsai.Html.Internal
+--
+-- I'd prefer to reuse the type class, but it gives an orphan instance
+--
+class HasAttribute a b | a -> b where
+  -- | Add an attribute to element node
+  withAttribute :: a -> b -> a
+
+instance hasAttributeFormDef :: HasAttribute (Free FormDefF Unit) (VD.Property FormMsg) where
+  withAttribute elem prop =
+    hoistFree go elem
+    where
+      go :: FormDefF ~> FormDefF
+      go (FormF rec x) = FormF (rec { attribs = CL.snoc rec.attribs prop }) x
+      go (FieldsetF rec x) = FieldsetF (rec { attribs = CL.snoc rec.attribs prop }) x
+      go (InputF rec x) = InputF (rec { attribs = CL.snoc rec.attribs prop }) x
+      go (GroupedF rec x) = GroupedF (rec { attribs = CL.snoc rec.attribs prop }) x
+      go (EmptyF x) = EmptyF x
+
+instance hasAttributeFormDefF :: HasAttribute (Free FormDefF Unit -> Free FormDefF Unit) (VD.Property FormMsg) where
+  withAttribute efn prop elem =
+    withAttribute (efn elem) prop
+
+
+infixl 4 withAttribute as !
+
+
+withAttributes
+  :: MarkupT FormMsg
+  -> CL.CatList (VD.Property FormMsg)
+  -> MarkupT FormMsg
+withAttributes elem attribs =
+  foldl HI.withAttribute elem attribs
+
 
 --
 --
@@ -217,38 +240,6 @@ updateForm model msg =
         setChecked k v b model
       _ ->
         model
-
---
---
--- helpers for interpreters
---
---
-combineClasses :: Array String -> Array Prop -> VD.Property FormMsg
-combineClasses as =
-  HA.cls <<<
-  A.intercalate " " <<<
-  (A.union as <<< A.concat <<< map extractClasses)
-
-  where
-    extractClasses :: Prop -> Array String
-    extractClasses (ClassList cs) = cs
-    extractClasses _ = []
-
-toProperty :: Prop -> VD.Property FormMsg
-toProperty p =
-  case p of
-    Required b -> HA.required b
-    Disabled b -> HA.disabled b
-    Readonly b -> HA.readonly b
-    Pattern s -> HA.pattern s
-    ClassList cs -> HA.cls (A.intercalate " " cs)
-    Autocomplete s -> HI.stringProperty "autocomplete" s
-    -- novalidate?
-    -- spellcheck?
-
-    -- the following via dsl primitives (different for text, ...)
-    -- max, min, maxlength, list, multiple (file/email)
-
 
 -- XXX need better name for these model functions
 -- checkbox models operate like sets, but those
