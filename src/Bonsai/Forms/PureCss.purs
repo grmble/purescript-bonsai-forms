@@ -1,9 +1,11 @@
 module Bonsai.Forms.PureCss
+  (alignedForm)
 where
 
 import Prelude
 
-import Bonsai.Forms (FormDef, FormDefF(..), FormModel, FormMsg(..), InputTyp(..), lookup, lookupChecked, withAttributes)
+import Bonsai.Forms.Internal (FormDef, FormDefF(..), InputTyp(..), withAttributes)
+import Bonsai.Forms.Model (FormModel, FormMsg(..), lookup, lookupChecked)
 import Bonsai.Html as H
 import Bonsai.Html.Attributes as A
 import Bonsai.Html.Events as E
@@ -18,6 +20,10 @@ import Data.Tuple (Tuple(..), fst, snd)
 type NameStack =
   CL.CatList String
 
+-- | Paint a PureCss aligned form from the form description.
+-- |
+-- | ID prefix can be provided to generate multiple forms with
+-- | different IDs.
 alignedForm :: Maybe String -> FormModel -> FormDef Unit -> H.Markup FormMsg Unit
 alignedForm idPrefix model content =
   transform CL.empty content
@@ -99,7 +105,7 @@ alignedForm idPrefix model content =
         (H.input `withAttributes` i.attribs) H.!
           A.typ (show i.typ) H.!
           A.id id H.!
-          E.onInput (FormSet n) H.!
+          E.onInput (FormSingle n) H.!
           A.value (fromMaybe "" (lookup n model))
         transformMessage i.message
 
@@ -120,7 +126,7 @@ alignedForm idPrefix model content =
             ICheckbox ->
               FormCheck n (fst tup) b
             _ ->
-              FormSet n (fst tup)
+              FormSingle n (fst tup)
 
     transformMessage msg =
       for_ msg ((H.span H.! A.cls "pure-form-message-inline") <<< H.text)
