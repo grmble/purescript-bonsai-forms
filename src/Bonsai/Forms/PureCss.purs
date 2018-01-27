@@ -73,22 +73,17 @@ alignedForm idPrefix model content =
     transformF ns (InputF i x) = do
       let n = intercalate "_" (CL.snoc ns i.name)
       let id = prefix n
-      case i.typ of
-        IText -> do
-          transformInput n id i
-          pure x
-        INumber -> do
-          transformInput n id i
-          pure x
-        IDate -> do
-          transformInput n id i
-          pure x
-        -- these are handled by GroupedF
-        IRadio ->
-          pure x
-        ICheckbox ->
-          pure x
 
+
+      case i.typ of
+        -- radio and checkbox are handled by GroupedF
+        IRadio -> pure x
+        ICheckbox -> pure x
+        -- file needs custom handling
+        IFile -> pure x
+
+        -- everything else is a wrapper on text
+        _ -> transformInput n id i *> pure x
 
     transformF ns (GroupedF g x) = do
       let n = intercalate "_" (CL.snoc ns g.name)

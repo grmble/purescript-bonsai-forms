@@ -16,7 +16,18 @@ module Bonsai.Forms
   , withLegend
   , textInput
   , numberInput
+  , colorInput
+  , emailInput
+  , passwordInput
+  , rangeInput
+  , searchInput
+  , telInput
+  , urlInput
   , dateInput
+  , datetimeLocalInput
+  , monthInput
+  , weekInput
+  , timeInput
   , checkboxInput
   , radioInput
   , withAttribute
@@ -85,7 +96,23 @@ type Grouped =
 data InputTyp
   = IText
   | INumber
+  | IColor
+  | IEmail
+  | IFile
+  | IHidden
+  -- | IImage -- its a button with a custom image
+  | IPassword
+  | IRange
+  | ISearch
+  | ITel
+  | IUrl
+
   | IDate
+  | IMonth
+  | IWeek
+  | IDatetimeLocal
+  | ITime
+
   | ICheckbox
   | IRadio
 
@@ -93,7 +120,23 @@ instance showInputTyp :: Show InputTyp where
   show i = case i of
     IText -> "text"
     INumber -> "number"
+    IColor -> "color"
+    IEmail -> "email"
+    IFile -> "file"
+    IHidden -> "hidden"
+    -- IImage -> "image"
+    IPassword -> "password"
+    IRange -> "range"
+    ISearch -> "seach"
+    ITel -> "tel"
+    IUrl -> "url"
+
     IDate -> "date"
+    IMonth -> "month"
+    IWeek -> "week"
+    IDatetimeLocal -> "datetime-local"
+    ITime -> "time"
+
     ICheckbox -> "checkbox"
     IRadio -> "radio"
 
@@ -162,8 +205,53 @@ grouped typ name inputs =
 
 
 textInput :: String -> String -> FormDefT
-textInput =
-  input IText
+textInput = input IText
+
+numberInput :: String -> String -> FormDefT
+numberInput = input INumber
+
+colorInput :: String -> String -> FormDefT
+colorInput = input IColor
+
+emailInput :: String -> String -> FormDefT
+emailInput = input IEmail
+
+passwordInput :: String -> String -> FormDefT
+passwordInput = input IPassword
+
+rangeInput :: String -> String -> FormDefT
+rangeInput = input IRange
+
+searchInput :: String -> String -> FormDefT
+searchInput = input ISearch
+
+telInput :: String -> String -> FormDefT
+telInput = input ITel
+
+urlInput :: String -> String -> FormDefT
+urlInput = input IUrl
+
+-- XXX
+-- Custom lines (for datalist?)
+-- IFile - needs custom change handler
+-- IHidden - has NO label and stuff
+
+dateInput :: String -> String -> FormDefT
+dateInput = input IDate
+
+datetimeLocalInput :: String -> String -> FormDefT
+datetimeLocalInput = input IDatetimeLocal
+
+monthInput :: String -> String -> FormDefT
+monthInput = input IMonth
+
+weekInput :: String -> String -> FormDefT
+weekInput = input IWeek
+
+timeInput :: String -> String -> FormDefT
+timeInput = input ITime
+
+
 
 checkboxInput :: String -> Array (Tuple String String) -> FormDefT
 checkboxInput =
@@ -173,13 +261,7 @@ radioInput :: String -> Array (Tuple String String) -> FormDefT
 radioInput =
   grouped IRadio
 
-numberInput :: String -> String -> FormDefT
-numberInput =
-  input INumber
 
-dateInput :: String -> String -> FormDefT
-dateInput =
-  input IDate
 
 --
 --
