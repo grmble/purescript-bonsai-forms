@@ -27,6 +27,8 @@ module Bonsai.Forms
   , timeInput
   , checkboxInput
   , radioInput
+  , customMarkup
+  , customControl
   )
 where
 
@@ -34,7 +36,9 @@ import Prelude
 
 import Bonsai.Forms.Internal (FormDefF(..), FormDefT, InputTyp(..))
 import Bonsai.Forms.Internal (withAttribute, (!)) as InternalExports
+import Bonsai.Forms.Model (FormMsg)
 import Bonsai.Forms.Model (FormMsg, FormModel) as ModelExports
+import Bonsai.Html (MarkupT)
 import Control.Monad.Free (hoistFree, liftF)
 import Data.CatList as CL
 import Data.Maybe (Maybe(..))
@@ -71,6 +75,8 @@ withMessage elem s =
       InputF (i { message = Just s }) x
     go (GroupedF g x) =
       GroupedF (g { message = Just s }) x
+    go (CustomControlF c x) =
+      CustomControlF (c { message = Just s }) x
     go x = x
 
 -- | Forms and Fieldsets can have optional legends.
@@ -166,3 +172,32 @@ checkboxInput =
 radioInput :: String -> Array (Tuple String String) -> FormDefT
 radioInput =
   grouped IRadio
+
+
+--
+--
+-- custom X for extensions
+--
+--
+
+-- | Custom markup will show up in the result as-is.
+-- |
+-- | Bad news is, the structure of the resulting html
+-- | depends a lot on the DSL interpreter (aligned? compact?
+-- | pure css? bootstrap?), so this will tie the form definition
+-- | to that distinct use case.
+customMarkup :: MarkupT FormMsg -> FormDefT
+customMarkup m =
+  liftF $ CustomMarkupF m unit
+
+
+-- | Custom controls will be rendered like Forms inputs.
+-- |
+-- | You have to provide a name and a label,
+-- | the markup itself will be rendered for the label
+-- | but unchanged except for the ID attribute - this will be set.
+-- |
+-- | You also also have to arrange for event handling.
+customControl :: String -> String -> MarkupT FormMsg -> FormDefT
+customControl name label markup =
+  liftF $ CustomControlF { name, label, markup, message: Nothing } unit

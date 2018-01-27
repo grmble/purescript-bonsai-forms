@@ -37,6 +37,10 @@ alignedForm idPrefix model content =
     transformF _ (EmptyF x) =
       pure x
 
+    transformF _ (CustomMarkupF markup x) = do
+      markup
+      pure x
+
     transformF ns (FormF f x) = do
       let ns' = CL.snoc ns f.name
       let c = transform ns' f.content
@@ -97,6 +101,15 @@ alignedForm idPrefix model content =
       H.div H.! A.cls "pure-controls" $ do
         transformGrouped n g.typ g.attribs g.inputs
         transformMessage g.message
+      pure x
+
+    transformF ns (CustomControlF control x) = do
+      let n = intercalate "_" (CL.snoc ns control.name)
+      let id = prefix n
+      H.div H.! A.cls "pure-control-group" $ do
+        H.label H.! A.for id $ H.text control.label
+        control.markup
+        transformMessage control.message
       pure x
 
     transformInput n id i = do

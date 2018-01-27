@@ -3,6 +3,7 @@ module Bonsai.Forms.Internal
   ( Fieldset
   , Input
   , Grouped
+  , CustomControl
   , InputTyp(..)
   , FormDef
   , FormDefF(..)
@@ -59,6 +60,12 @@ type Grouped =
   , inputs :: Array (Tuple String String)
   }
 
+type CustomControl =
+  { name :: String
+  , label :: String
+  , message :: Maybe String
+  , markup :: MarkupT FormMsg
+  }
 
 data InputTyp
   = IText
@@ -110,6 +117,8 @@ data FormDefF a
   | FieldsetF Fieldset a
   | InputF Input a
   | GroupedF Grouped a
+  | CustomMarkupF (MarkupT FormMsg) a
+  | CustomControlF CustomControl a
   | EmptyF a
 
 instance functorFormDefF :: Functor FormDefF where
@@ -117,6 +126,8 @@ instance functorFormDefF :: Functor FormDefF where
   map f (FieldsetF rec x) = FieldsetF rec (f x)
   map f (InputF v x) = InputF v (f x)
   map f (GroupedF g x) = GroupedF g (f x)
+  map f (CustomMarkupF m x) = CustomMarkupF m (f x)
+  map f (CustomControlF m x) = CustomControlF m (f x)
   map f (EmptyF x) = EmptyF (f x)
 
 type FormDef = Free FormDefF
@@ -142,6 +153,8 @@ instance hasAttributeFormDef :: HasAttribute (Free FormDefF Unit) (VD.Property F
       go (FieldsetF rec x) = FieldsetF (rec { attribs = CL.snoc rec.attribs prop }) x
       go (InputF rec x) = InputF (rec { attribs = CL.snoc rec.attribs prop }) x
       go (GroupedF rec x) = GroupedF (rec { attribs = CL.snoc rec.attribs prop }) x
+      go (CustomMarkupF markup x) = CustomMarkupF (markup HI.! prop) x
+      go (CustomControlF rec x) = CustomControlF (rec { markup = rec.markup HI.! prop }) x
       go (EmptyF x) = EmptyF x
 
 instance hasAttributeFormDefF :: HasAttribute (Free FormDefF Unit -> Free FormDefF Unit) (VD.Property FormMsg) where
