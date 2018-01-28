@@ -4,7 +4,7 @@ where
 
 import Prelude
 
-import Bonsai.Forms.Internal (FormDef, FormDefF(..), InputTyp(..), withAttributes)
+import Bonsai.Forms.Internal (FormDef, FormDefF(..), InputTyp(..), Name, withAttributes)
 import Bonsai.Forms.Model (FormModel, FormMsg(..), lookup, lookupChecked)
 import Bonsai.Html as H
 import Bonsai.Html.Attributes as A
@@ -18,13 +18,13 @@ import Data.Tuple (Tuple(..), fst, snd)
 
 
 type NameStack =
-  CL.CatList String
+  CL.CatList Name
 
 -- | Paint a PureCss aligned form from the form description.
 -- |
 -- | ID prefix can be provided to generate multiple forms with
 -- | different IDs.
-alignedForm :: Maybe String -> FormModel -> FormDef Unit -> H.Markup FormMsg Unit
+alignedForm :: Maybe Name -> FormModel -> FormDef Unit -> H.Markup FormMsg Unit
 alignedForm idPrefix model content =
   transform CL.empty content
 
@@ -92,6 +92,8 @@ alignedForm idPrefix model content =
         -- file needs custom handling
         IFile -> pure x
 
+        ITextarea -> transformTextarea n id i *> pure x
+
         -- everything else is a wrapper on text
         _ -> transformInput n id i *> pure x
 
@@ -106,21 +108,27 @@ alignedForm idPrefix model content =
     transformF ns (CustomControlF control x) = do
       let n = intercalate "_" (CL.snoc ns control.name)
       let id = prefix n
-      H.div H.! A.cls "pure-control-group" $ do
-        H.label H.! A.for id $ H.text control.label
-        control.markup
-        transformMessage control.message
+      transformControl n id control.label control.message control.markup
       pure x
 
-    transformInput n id i = do
+    transformControl n id label message markup = do
       H.div H.! A.cls "pure-control-group" $ do
-        H.label H.! A.for id $ H.text i.label
-        (H.input `withAttributes` i.attribs) H.!
+        H.label H.! A.for id $ H.text label
+        markup
+        transformMessage message
+
+    transformInput n id i =
+      transformControl n id i.label i.message $
+        H.input `withAttributes` i.attribs H.!
           A.typ (show i.typ) H.!
-          A.id id H.!
           E.onInput (FormSingle n) H.!
           A.value (fromMaybe "" (lookup n model))
-        transformMessage i.message
+
+    transformTextarea n id i =
+      transformControl n id i.label i.message $
+        H.textarea `withAttributes` i.attribs H.!
+          E.onInput (FormSingle n) H.!
+          A.value (fromMaybe "" (lookup n model))
 
     transformGrouped n typ props inputs = do
       for_ inputs \tup ->

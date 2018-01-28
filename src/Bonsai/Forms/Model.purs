@@ -9,6 +9,7 @@ module Bonsai.Forms.Model
   , FormModel(..)
   , emptyFormModel
   , updateForm
+  , updatePlain
   , insert
   , insertMulti
   , removeMulti
@@ -16,16 +17,21 @@ module Bonsai.Forms.Model
   , lookup
   , lookupMulti
   , lookupChecked
+  , targetSelectedOptions
   )
 where
 
 import Prelude
 
 import Bonsai (UpdateResult, plainResult)
+import Data.Array as A
+import Data.Foreign (F, Foreign, readInt, readString)
+import Data.Foreign.Index ((!))
 import Data.List as L
 import Data.List.NonEmpty as NEL
 import Data.Map as M
 import Data.Maybe (Maybe(..))
+import Data.Traversable (traverse)
 
 --
 --
@@ -38,6 +44,7 @@ data FormMsg
   = FormSingle String String
   | FormMulti String String
   | FormRemove String String
+  | FormRemoveAll String
   | FormCheck String String Boolean
   | FormOK
   | FormCancel
@@ -57,21 +64,30 @@ emptyFormModel :: FormModel
 emptyFormModel =
   M.empty
 
+-- | plain update function for a FormModel
+-- |
+-- | already using the planned msg model arguments
+updatePlain :: FormMsg -> FormModel -> FormModel
+updatePlain msg model =
+  case msg of
+    FormSingle k v ->
+      insert k v model
+    FormMulti k v ->
+      insertMulti k v model
+    FormRemove k v ->
+      removeMulti k v model
+    FormRemoveAll k ->
+      removeAll k model
+    FormCheck k v b ->
+      updateChecked k v b model
+    _ ->
+      model
+
 -- | update function for a FormModel
 updateForm :: forall eff. FormModel -> FormMsg -> UpdateResult eff FormModel FormMsg
 updateForm model msg =
-  plainResult $
-    case msg of
-      FormSingle k v ->
-        insert k v model
-      FormMulti k v ->
-        insertMulti k v model
-      FormRemove k v ->
-        removeMulti k v model
-      FormCheck k v b ->
-        updateChecked k v b model
-      _ ->
-        model
+  plainResult $ updatePlain msg model
+
 
 -- | Insert a single value for the key.
 -- |
@@ -108,6 +124,10 @@ removeMulti k v model =
     myRemove s (Just nel) =
       NEL.fromList $ L.filter (\x -> s /= x) (NEL.toList nel)
 
+-- | Remove all the values for the key
+removeAll :: String -> FormModel -> FormModel
+removeAll k model =
+  M.alter (const Nothing) k model
 
 -- | Lookup the (single) value for a key.
 lookup :: String -> FormModel -> Maybe String
@@ -135,3 +155,17 @@ updateChecked k v b model =
 lookupChecked :: String -> String -> FormModel -> Boolean
 lookupChecked k v model =
   L.elem v (lookupMulti k model)
+
+-- | event decoder for select elements
+targetSelectedOptions :: String -> Foreign -> F (Array FormMsg)
+targetSelectedOptions name event = do
+  optsDomList <- event ! "target" ! "selectedOptions"
+  len <- optsDomList ! "length" >>= readInt
+  opts <- traverse (\i -> optsDomList ! i ! "value" >>= readString) (L.range 0 (len - 1))
+  case opts of
+    L.Nil ->
+      pure [FormRemoveAll name]
+    L.Cons s1 L.Nil ->
+      pure [FormSingle name s1]
+    _ -> do
+      pure $ A.fromFoldable $ L.Cons (FormRemoveAll name) (map (FormMulti name) opts)

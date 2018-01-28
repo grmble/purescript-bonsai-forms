@@ -6,7 +6,7 @@ Making good looking forms is all about structuring your
 html to match your css library's (pure css, bootstrap, ...)
 expectations and using the correct css classes.
 
-Making correct forms with Bonsai is all avoiding state
+Making correct forms with Bonsai is all about avoiding state
 that is not in the model.  This means you need a model for
 every form, and you can't just use your record types either -
 e.g. for a number input, you want to store even the users
@@ -23,5 +23,9 @@ This library attempts to provide
   the compiler has enough information about your data types
   to generate simple but working forms
 
-That's the idea anyway.  Right now, there is a partial DSL
-and a partial implementation for Pure CSS.
+That's the idea anyway.  Right now, there is a first shot at\
+the DSL and an interpreter for Pure CSS aligned forms.
+
+* Support for textarea and all input types except hidden and file.
+* customMarkup/customControl can be used to add missing functionality,
+  e.g. html selects (example at https://github.com/grmble/purescript-bonsai-forms-demo)

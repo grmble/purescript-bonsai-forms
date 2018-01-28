@@ -27,6 +27,7 @@ module Bonsai.Forms
   , timeInput
   , checkboxInput
   , radioInput
+  , textareaInput
   , customMarkup
   , customControl
   )
@@ -34,8 +35,8 @@ where
 
 import Prelude
 
-import Bonsai.Forms.Internal (FormDefF(..), FormDefT, InputTyp(..))
-import Bonsai.Forms.Internal (withAttribute, (!)) as InternalExports
+import Bonsai.Forms.Internal (FormDefF(..), FormDefT, InputTyp(..), Name)
+import Bonsai.Forms.Internal (Name, withAttribute, (!)) as InternalExports
 import Bonsai.Forms.Model (FormMsg)
 import Bonsai.Forms.Model (FormMsg, FormModel) as ModelExports
 import Bonsai.Html (MarkupT)
@@ -56,12 +57,12 @@ import Data.Tuple (Tuple)
 -- | validation as much as possible, so all the internal inputs
 -- | and buttons assume that there will be an outer form
 -- | with an onSubmit.
-form :: String -> FormDefT -> FormDefT
+form :: Name -> FormDefT -> FormDefT
 form name content =
   liftF $ FormF { name, content, legend: Nothing, attribs: CL.empty } unit
 
 -- | A fieldset - a group of related controls.
-fieldset :: String -> FormDefT -> FormDefT
+fieldset :: Name -> FormDefT -> FormDefT
 fieldset name content =
   liftF $ FieldsetF { name, content, legend: Nothing, attribs: CL.empty } unit
 
@@ -92,87 +93,92 @@ withLegend efn s elem =
     go x = x
 
 
-input :: InputTyp -> String -> String -> FormDefT
+input :: InputTyp -> Name -> String -> FormDefT
 input typ name label =
   liftF $ InputF { typ, name, label, attribs: CL.empty, message: Nothing } unit
 
 
-grouped :: InputTyp -> String -> Array (Tuple String String) -> FormDefT
+grouped :: InputTyp -> Name -> Array (Tuple Name String) -> FormDefT
 grouped typ name inputs =
   liftF $ GroupedF { typ, name, inputs, attribs: CL.empty, message: Nothing } unit
 
 
 -- | HTML text input
-textInput :: String -> String -> FormDefT
+textInput :: Name -> String -> FormDefT
 textInput = input IText
 
 -- | HTML5 number input, degrades to text.
 -- |
 -- | Support seems decent, all the major browsers.
-numberInput :: String -> String -> FormDefT
+numberInput :: Name -> String -> FormDefT
 numberInput = input INumber
 
 -- | HTML5 color input, degrades to text.
-colorInput :: String -> String -> FormDefT
+colorInput :: Name -> String -> FormDefT
 colorInput = input IColor
 
 -- | HTML5 email input, degrades to text.
-emailInput :: String -> String -> FormDefT
+emailInput :: Name -> String -> FormDefT
 emailInput = input IEmail
 
 -- | HTML password input.
-passwordInput :: String -> String -> FormDefT
+passwordInput :: Name -> String -> FormDefT
 passwordInput = input IPassword
 
 -- | HTML5 range input, degrads to text.
-rangeInput :: String -> String -> FormDefT
+rangeInput :: Name -> String -> FormDefT
 rangeInput = input IRange
 
 -- | HTML5 search input, degrades to text.
-searchInput :: String -> String -> FormDefT
+searchInput :: Name -> String -> FormDefT
 searchInput = input ISearch
 
 -- | HTML5 tel input, degrades to text.
-telInput :: String -> String -> FormDefT
+telInput :: Name -> String -> FormDefT
 telInput = input ITel
 
 -- | HTML5 url input, degrades to text.
-urlInput :: String -> String -> FormDefT
+urlInput :: Name -> String -> FormDefT
 urlInput = input IUrl
 
 -- | HTML5 date input.
 -- |
 -- | Suport seems decent, all the major browsers except IE.
-dateInput :: String -> String -> FormDefT
+dateInput :: Name -> String -> FormDefT
 dateInput = input IDate
 
 -- | HTML5 datetime-local input, degrades to text.
-datetimeLocalInput :: String -> String -> FormDefT
+datetimeLocalInput :: Name -> String -> FormDefT
 datetimeLocalInput = input IDatetimeLocal
 
 -- | HTML5 datetime-local input, degrades to text.
-monthInput :: String -> String -> FormDefT
+monthInput :: Name -> String -> FormDefT
 monthInput = input IMonth
 
 -- | HTML5 datetime-local input, degrades to text.
-weekInput :: String -> String -> FormDefT
+weekInput :: Name -> String -> FormDefT
 weekInput = input IWeek
 
 -- | HTML5 datetime-local input, degrades to text.
-timeInput :: String -> String -> FormDefT
+timeInput :: Name -> String -> FormDefT
 timeInput = input ITime
 
 
 -- | HTML checkbox
-checkboxInput :: String -> Array (Tuple String String) -> FormDefT
+checkboxInput :: Name -> Array (Tuple Name String) -> FormDefT
 checkboxInput =
   grouped ICheckbox
 
 -- | HTML radio control
-radioInput :: String -> Array (Tuple String String) -> FormDefT
+radioInput :: Name -> Array (Tuple Name String) -> FormDefT
 radioInput =
   grouped IRadio
 
+
+-- | HTML textarea
+textareaInput :: Name -> String -> FormDefT
+textareaInput =
+  input ITextarea
 
 --
 --
@@ -198,6 +204,6 @@ customMarkup m =
 -- | but unchanged except for the ID attribute - this will be set.
 -- |
 -- | You also also have to arrange for event handling.
-customControl :: String -> String -> MarkupT FormMsg -> FormDefT
+customControl :: Name -> String -> MarkupT FormMsg -> FormDefT
 customControl name label markup =
   liftF $ CustomControlF { name, label, markup, message: Nothing } unit

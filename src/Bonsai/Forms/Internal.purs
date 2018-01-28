@@ -1,6 +1,7 @@
 -- | Internal Module for the Forms DSL
 module Bonsai.Forms.Internal
-  ( Fieldset
+  ( Name
+  , Fieldset
   , Input
   , Grouped
   , CustomControl
@@ -35,8 +36,16 @@ import Data.Tuple (Tuple)
 --
 --
 
+-- | String suitable for a html name attribute
+-- |
+-- | Note that the DSL joins nested Names to
+-- | build html id attributes.  So do not
+-- | use any characters you would not use in
+-- | such an attribute.
+type Name = String
+
 type Fieldset =
-  { name :: String
+  { name :: Name
   , legend :: Maybe String
   , attribs :: CL.CatList (Property FormMsg)
   , content :: FormDefT
@@ -44,7 +53,7 @@ type Fieldset =
 
 type Input =
   { typ :: InputTyp
-  , name :: String
+  , name :: Name
   , label :: String
   , message :: Maybe String
   , attribs :: CL.CatList (Property FormMsg)
@@ -54,14 +63,14 @@ type Input =
 -- multiple controls with the same name
 type Grouped =
   { typ :: InputTyp
-  , name :: String
+  , name :: Name
   , message :: Maybe String
   , attribs :: CL.CatList (Property FormMsg)
-  , inputs :: Array (Tuple String String)
+  , inputs :: Array (Tuple Name String)
   }
 
 type CustomControl =
-  { name :: String
+  { name :: Name
   , label :: String
   , message :: Maybe String
   , markup :: MarkupT FormMsg
@@ -90,6 +99,9 @@ data InputTyp
   | ICheckbox
   | IRadio
 
+  -- not an html input, but for our DSL it's the same
+  | ITextarea
+
 instance showInputTyp :: Show InputTyp where
   show i = case i of
     IText -> "text"
@@ -111,6 +123,10 @@ instance showInputTyp :: Show InputTyp where
 
     ICheckbox -> "checkbox"
     IRadio -> "radio"
+
+    ITextarea -> "textarea"
+
+
 
 data FormDefF a
   = FormF Fieldset a
