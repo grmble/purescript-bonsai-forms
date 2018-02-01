@@ -4,15 +4,20 @@ where
 
 import Prelude
 
-import Bonsai.Forms.Internal (FormDef, FormDefF(..), InputTyp(..), Name, withAttributes)
+import Bonsai (Cmd)
+import Bonsai.EventHandlers (constHandler, on, targetValueHandler)
+import Bonsai.Forms.Internal (FormDef, FormDefF(..), InputTyp(..), Name)
 import Bonsai.Forms.Model (FormModel, FormMsg(..), lookup, lookupChecked)
 import Bonsai.Html as H
 import Bonsai.Html.Attributes as A
 import Bonsai.Html.Events as E
+import Bonsai.Html.Internal as HI
 import Control.Monad.Free (substFree)
 import Data.Array as Array
 import Data.CatList as CL
 import Data.Foldable (for_, intercalate)
+import Data.Foreign (Foreign, F)
+import Data.Function.Memoize (memoize2)
 import Data.Maybe (Maybe, fromMaybe, maybe)
 import Data.Tuple (Tuple(..), fst, snd)
 
@@ -53,7 +58,7 @@ alignedForm idPrefix model content =
           ( f.attribs <>
             (CL.cons (A.cls "pure-form") $
              CL.cons (A.cls "pure-form-aligned") $
-             CL.cons (E.onSubmit FormOK) $
+             CL.cons (on "submit" constFormOK) $
              CL.empty)))
         [ Tuple n $ H.render $
             H.fieldset $ do
@@ -67,7 +72,7 @@ alignedForm idPrefix model content =
                 H.button
                   H.! A.typ "button"
                   H.! A.cls "pure-button"
-                  H.! E.onClick FormCancel $
+                  H.! (on "click" constFormCancel) $
                   H.text "Cancel"
         ]
       pure x
@@ -114,26 +119,26 @@ alignedForm idPrefix model content =
     transformControl n id label message markup = do
       H.div H.! A.cls "pure-control-group" $ do
         H.label H.! A.for id $ H.text label
-        markup
+        markup H.! A.id id
         transformMessage message
 
     transformInput n id i =
       transformControl n id i.label i.message $
-        H.input `withAttributes` i.attribs H.!
+        H.input `HI.withAttributes` i.attribs H.!
           A.typ (show i.typ) H.!
-          E.onInput (FormSingle n) H.!
+          (on "input" (memoize2 formSingleHandler id n)) H.!
           A.value (fromMaybe "" (lookup n model))
 
     transformTextarea n id i =
       transformControl n id i.label i.message $
-        H.textarea `withAttributes` i.attribs H.!
-          E.onInput (FormSingle n) H.!
+        H.textarea `HI.withAttributes` i.attribs H.!
+          (on "input" (memoize2 formSingleHandler id n)) H.!
           A.value (fromMaybe "" (lookup n model))
 
     transformGrouped n typ props inputs = do
       for_ inputs \tup ->
         H.label H.! A.cls ("pure-" <> show typ) $ do
-          (H.input `withAttributes` props) H.!
+          (H.input `HI.withAttributes` props) H.!
             A.typ (show typ) H.!
             A.name n H.!
             E.onCheckedChange (changeHandler tup) H.!
@@ -159,3 +164,19 @@ alignedForm idPrefix model content =
       maybe n
         (\p -> intercalate "_" [ p, n ])
         idPrefix
+
+
+constFormOK :: forall eff. Foreign -> F (Cmd eff FormMsg)
+constFormOK =
+  constHandler FormOK
+
+constFormCancel :: forall eff. Foreign -> F (Cmd eff FormMsg)
+constFormCancel =
+  constHandler FormCancel
+
+-- memoizable handler for text input events
+-- the first parameter is the for id, since it must be unique on the page
+-- there should be no collisions
+formSingleHandler :: forall eff. String -> String -> Foreign -> F (Cmd eff FormMsg)
+formSingleHandler _ name =
+  targetValueHandler (FormSingle name)

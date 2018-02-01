@@ -12,7 +12,6 @@ module Bonsai.Forms.Internal
   , class HasAttribute
   , (!)
   , withAttribute
-  , withAttributes
   )
 where
 
@@ -25,7 +24,6 @@ import Bonsai.VirtualDom (Property)
 import Bonsai.VirtualDom as VD
 import Control.Monad.Free (Free, hoistFree)
 import Data.CatList as CL
-import Data.Foldable (foldl)
 import Data.Maybe (Maybe)
 import Data.Tuple (Tuple)
 
@@ -179,12 +177,3 @@ instance hasAttributeFormDefF :: HasAttribute (Free FormDefF Unit -> Free FormDe
 
 
 infixl 4 withAttribute as !
-
-
--- | Appends multiple Properties to a MarkupT
-withAttributes
-  :: MarkupT FormMsg
-  -> CL.CatList (VD.Property FormMsg)
-  -> MarkupT FormMsg
-withAttributes elem attribs =
-  foldl HI.withAttribute elem attribs
