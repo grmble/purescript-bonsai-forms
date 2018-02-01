@@ -5,7 +5,7 @@ where
 import Prelude
 
 import Bonsai (Cmd)
-import Bonsai.EventHandlers (constHandler, on, targetValueHandler)
+import Bonsai.EventHandlers (constHandler, on, onWithOptions, targetValueHandler)
 import Bonsai.Forms.Internal (FormDef, FormDefF(..), InputTyp(..), Name)
 import Bonsai.Forms.Model (FormModel, FormMsg(..), lookup, lookupChecked)
 import Bonsai.Html as H
@@ -58,7 +58,7 @@ alignedForm idPrefix model content =
           ( f.attribs <>
             (CL.cons (A.cls "pure-form") $
              CL.cons (A.cls "pure-form-aligned") $
-             CL.cons (on "submit" constFormOK) $
+             CL.cons (onWithOptions E.preventDefaultStopPropagation "submit" constFormOK) $
              CL.empty)))
         [ Tuple n $ H.render $
             H.fieldset $ do
