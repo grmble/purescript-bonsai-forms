@@ -23,7 +23,7 @@ where
 
 import Prelude
 
-import Bonsai (Cmd, plainResult)
+import Bonsai (Cmd, emptyCommand)
 import Data.Array as A
 import Data.Foreign (F, Foreign, readInt, readString)
 import Data.Foreign.Index ((!))
@@ -32,7 +32,7 @@ import Data.List.NonEmpty as NEL
 import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse)
-import Data.Tuple (Tuple)
+import Data.Tuple (Tuple(..))
 
 --
 --
@@ -87,7 +87,7 @@ updatePlain msg model =
 -- | update function for a FormModel
 updateForm :: forall eff. FormMsg -> FormModel -> Tuple (Cmd eff FormMsg) FormModel
 updateForm =
-  map plainResult <<< updatePlain
+  map (Tuple emptyCommand) <<< updatePlain
 
 
 -- | Insert a single value for the key.
