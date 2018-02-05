@@ -23,7 +23,8 @@ where
 
 import Prelude
 
-import Bonsai (Cmd, emptyCommand)
+import Bonsai (Cmd)
+import Control.Plus (empty)
 import Data.Array as A
 import Data.Foreign (F, Foreign, readInt, readString)
 import Data.Foreign.Index ((!))
@@ -87,7 +88,7 @@ updatePlain msg model =
 -- | update function for a FormModel
 updateForm :: forall eff. FormMsg -> FormModel -> Tuple (Cmd eff FormMsg) FormModel
 updateForm =
-  map (Tuple emptyCommand) <<< updatePlain
+  map (Tuple empty) <<< updatePlain
 
 
 -- | Insert a single value for the key.
