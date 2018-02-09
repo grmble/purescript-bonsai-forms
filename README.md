@@ -1,5 +1,8 @@
 # Purescript Bonsai Forms
 
+[![Build Status](https://travis-ci.org/grmble/purescript-bonsai-forms.svg?branch=master)](https://travis-ci.org/grmble/purescript-bonsai-forms)
+
+
 A DSL for html form generation.
 
 Making good looking forms is all about structuring your
@@ -29,4 +32,3 @@ the DSL and an interpreter for Pure CSS aligned forms.
 * Support for textarea and all input types except hidden and file.
 * customMarkup/customControl can be used to add missing functionality,
   e.g. html selects (example at https://github.com/grmble/purescript-bonsai-forms-demo)
-
