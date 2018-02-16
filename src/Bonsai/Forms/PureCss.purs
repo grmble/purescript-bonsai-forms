@@ -11,8 +11,9 @@ import Bonsai.Forms.Model (FormModel, FormMsg(..), lookup, lookupChecked)
 import Bonsai.Html as H
 import Bonsai.Html.Attributes as A
 import Bonsai.Html.Events as E
+import Bonsai.Html.Internal (withAttributes)
 import Bonsai.Html.Internal as HI
-import Control.Monad.Free (substFree)
+import Control.Monad.Free (Free, substFree)
 import Data.Array as Array
 import Data.CatList as CL
 import Data.Foldable (for_, intercalate)
@@ -29,16 +30,16 @@ type NameStack =
 -- |
 -- | ID prefix can be provided to generate multiple forms with
 -- | different IDs.
-alignedForm :: Maybe Name -> FormModel -> FormDef Unit -> H.Markup FormMsg Unit
+alignedForm :: Maybe Name -> FormModel -> FormDef -> H.Markup FormMsg
 alignedForm idPrefix model content =
   transform CL.empty content
 
   where
-    transform :: forall a. NameStack -> FormDef a -> H.Markup FormMsg a
+    transform :: forall a. NameStack -> Free FormDefF a -> Free (H.MarkupF FormMsg) a
     transform ns c =
       substFree (transformF ns) c
 
-    transformF :: forall a. NameStack -> FormDefF a -> H.Markup FormMsg a
+    transformF :: forall a. NameStack -> FormDefF a -> Free (H.MarkupF FormMsg) a
     transformF _ (EmptyF x) =
       pure x
 
@@ -53,14 +54,11 @@ alignedForm idPrefix model content =
 
       -- the keyedElement guards against weirdness with
       -- input element reuse by the virtual dom
-      H.keyedElement "form"
-        (Array.fromFoldable
-          ( f.attribs <>
-            (CL.cons (A.cls "pure-form") $
-             CL.cons (A.cls "pure-form-aligned") $
-             CL.cons (onWithOptions E.preventDefaultStopPropagation "submit" constFormOK) $
-             CL.empty)))
-        [ Tuple n $ H.render $
+      (H.keyedElement "form" `withAttributes` f.attribs)
+        H.! A.cls "pure-form pure-form-aligned"
+        H.! onWithOptions E.preventDefaultStopPropagation "submit" constFormOK
+        $ do
+          H.keyed n $ H.render $
             H.fieldset $ do
               transformLegend f.legend
               c
@@ -74,7 +72,6 @@ alignedForm idPrefix model content =
                   H.! A.cls "pure-button"
                   H.! (on "click" constFormCancel) $
                   H.text "Cancel"
-        ]
       pure x
 
     transformF ns (FieldsetF f x) = do

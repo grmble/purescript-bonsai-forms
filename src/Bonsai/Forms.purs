@@ -35,11 +35,11 @@ where
 
 import Prelude
 
-import Bonsai.Forms.Internal (FormDefF(..), FormDefT, InputTyp(..), Name)
+import Bonsai.Forms.Internal (FormDef, FormDefF(..), InputTyp(..), Name)
 import Bonsai.Forms.Internal (Name, withAttribute, (!)) as InternalExports
 import Bonsai.Forms.Model (FormMsg)
 import Bonsai.Forms.Model (FormMsg, FormModel) as ModelExports
-import Bonsai.Html (MarkupT)
+import Bonsai.Html (Markup)
 import Control.Monad.Free (hoistFree, liftF)
 import Data.CatList as CL
 import Data.Maybe (Maybe(..))
@@ -57,17 +57,17 @@ import Data.Tuple (Tuple)
 -- | validation as much as possible, so all the internal inputs
 -- | and buttons assume that there will be an outer form
 -- | with an onSubmit.
-form :: Name -> FormDefT -> FormDefT
+form :: Name -> FormDef -> FormDef
 form name content =
   liftF $ FormF { name, content, legend: Nothing, attribs: CL.empty } unit
 
 -- | A fieldset - a group of related controls.
-fieldset :: Name -> FormDefT -> FormDefT
+fieldset :: Name -> FormDef -> FormDef
 fieldset name content =
   liftF $ FieldsetF { name, content, legend: Nothing, attribs: CL.empty } unit
 
 -- | Form Controls can optional messages.
-withMessage :: FormDefT -> String -> FormDefT
+withMessage :: FormDef -> String -> FormDef
 withMessage elem s =
   hoistFree go elem
   where
@@ -81,7 +81,7 @@ withMessage elem s =
     go x = x
 
 -- | Forms and Fieldsets can have optional legends.
-withLegend :: (FormDefT -> FormDefT) -> String -> FormDefT -> FormDefT
+withLegend :: (FormDef -> FormDef) -> String -> FormDef -> FormDef
 withLegend efn s elem =
   hoistFree go (efn elem)
   where
@@ -93,90 +93,90 @@ withLegend efn s elem =
     go x = x
 
 
-input :: InputTyp -> Name -> String -> FormDefT
+input :: InputTyp -> Name -> String -> FormDef
 input typ name label =
   liftF $ InputF { typ, name, label, attribs: CL.empty, message: Nothing } unit
 
 
-grouped :: InputTyp -> Name -> Array (Tuple Name String) -> FormDefT
+grouped :: InputTyp -> Name -> Array (Tuple Name String) -> FormDef
 grouped typ name inputs =
   liftF $ GroupedF { typ, name, inputs, attribs: CL.empty, message: Nothing } unit
 
 
 -- | HTML text input
-textInput :: Name -> String -> FormDefT
+textInput :: Name -> String -> FormDef
 textInput = input IText
 
 -- | HTML5 number input, degrades to text.
 -- |
 -- | Support seems decent, all the major browsers.
-numberInput :: Name -> String -> FormDefT
+numberInput :: Name -> String -> FormDef
 numberInput = input INumber
 
 -- | HTML5 color input, degrades to text.
-colorInput :: Name -> String -> FormDefT
+colorInput :: Name -> String -> FormDef
 colorInput = input IColor
 
 -- | HTML5 email input, degrades to text.
-emailInput :: Name -> String -> FormDefT
+emailInput :: Name -> String -> FormDef
 emailInput = input IEmail
 
 -- | HTML password input.
-passwordInput :: Name -> String -> FormDefT
+passwordInput :: Name -> String -> FormDef
 passwordInput = input IPassword
 
 -- | HTML5 range input, degrads to text.
-rangeInput :: Name -> String -> FormDefT
+rangeInput :: Name -> String -> FormDef
 rangeInput = input IRange
 
 -- | HTML5 search input, degrades to text.
-searchInput :: Name -> String -> FormDefT
+searchInput :: Name -> String -> FormDef
 searchInput = input ISearch
 
 -- | HTML5 tel input, degrades to text.
-telInput :: Name -> String -> FormDefT
+telInput :: Name -> String -> FormDef
 telInput = input ITel
 
 -- | HTML5 url input, degrades to text.
-urlInput :: Name -> String -> FormDefT
+urlInput :: Name -> String -> FormDef
 urlInput = input IUrl
 
 -- | HTML5 date input.
 -- |
 -- | Suport seems decent, all the major browsers except IE.
-dateInput :: Name -> String -> FormDefT
+dateInput :: Name -> String -> FormDef
 dateInput = input IDate
 
 -- | HTML5 datetime-local input, degrades to text.
-datetimeLocalInput :: Name -> String -> FormDefT
+datetimeLocalInput :: Name -> String -> FormDef
 datetimeLocalInput = input IDatetimeLocal
 
 -- | HTML5 datetime-local input, degrades to text.
-monthInput :: Name -> String -> FormDefT
+monthInput :: Name -> String -> FormDef
 monthInput = input IMonth
 
 -- | HTML5 datetime-local input, degrades to text.
-weekInput :: Name -> String -> FormDefT
+weekInput :: Name -> String -> FormDef
 weekInput = input IWeek
 
 -- | HTML5 datetime-local input, degrades to text.
-timeInput :: Name -> String -> FormDefT
+timeInput :: Name -> String -> FormDef
 timeInput = input ITime
 
 
 -- | HTML checkbox
-checkboxInput :: Name -> Array (Tuple Name String) -> FormDefT
+checkboxInput :: Name -> Array (Tuple Name String) -> FormDef
 checkboxInput =
   grouped ICheckbox
 
 -- | HTML radio control
-radioInput :: Name -> Array (Tuple Name String) -> FormDefT
+radioInput :: Name -> Array (Tuple Name String) -> FormDef
 radioInput =
   grouped IRadio
 
 
 -- | HTML textarea
-textareaInput :: Name -> String -> FormDefT
+textareaInput :: Name -> String -> FormDef
 textareaInput =
   input ITextarea
 
@@ -192,7 +192,7 @@ textareaInput =
 -- | depends a lot on the DSL interpreter (aligned? compact?
 -- | pure css? bootstrap?), so this will tie the form definition
 -- | to that distinct use case.
-customMarkup :: MarkupT FormMsg -> FormDefT
+customMarkup :: Markup FormMsg -> FormDef
 customMarkup m =
   liftF $ CustomMarkupF m unit
 
@@ -204,6 +204,6 @@ customMarkup m =
 -- | but unchanged except for the ID attribute - this will be set.
 -- |
 -- | You also also have to arrange for event handling.
-customControl :: Name -> String -> MarkupT FormMsg -> FormDefT
+customControl :: Name -> String -> Markup FormMsg -> FormDef
 customControl name label markup =
   liftF $ CustomControlF { name, label, markup, message: Nothing } unit

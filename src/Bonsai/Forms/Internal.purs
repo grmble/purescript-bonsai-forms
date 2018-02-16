@@ -8,7 +8,6 @@ module Bonsai.Forms.Internal
   , InputTyp(..)
   , FormDef
   , FormDefF(..)
-  , FormDefT
   , class HasAttribute
   , (!)
   , withAttribute
@@ -18,7 +17,7 @@ where
 import Prelude
 
 import Bonsai.Forms.Model (FormMsg)
-import Bonsai.Html (MarkupT)
+import Bonsai.Html (Markup)
 import Bonsai.Html.Internal as HI
 import Bonsai.VirtualDom (Property)
 import Bonsai.VirtualDom as VD
@@ -46,7 +45,7 @@ type Fieldset =
   { name :: Name
   , legend :: Maybe String
   , attribs :: CL.CatList (Property FormMsg)
-  , content :: FormDefT
+  , content :: FormDef
   }
 
 type Input =
@@ -71,7 +70,7 @@ type CustomControl =
   { name :: Name
   , label :: String
   , message :: Maybe String
-  , markup :: MarkupT FormMsg
+  , markup :: Markup FormMsg
   }
 
 data InputTyp
@@ -131,7 +130,7 @@ data FormDefF a
   | FieldsetF Fieldset a
   | InputF Input a
   | GroupedF Grouped a
-  | CustomMarkupF (MarkupT FormMsg) a
+  | CustomMarkupF (Markup FormMsg) a
   | CustomControlF CustomControl a
   | EmptyF a
 
@@ -144,8 +143,7 @@ instance functorFormDefF :: Functor FormDefF where
   map f (CustomControlF m x) = CustomControlF m (f x)
   map f (EmptyF x) = EmptyF (f x)
 
-type FormDef = Free FormDefF
-type FormDefT = FormDef Unit
+type FormDef = Free FormDefF Unit
 
 
 --
