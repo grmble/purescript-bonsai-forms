@@ -14,13 +14,12 @@ import Bonsai.Html.Events as E
 import Bonsai.Html.Internal (withAttributes)
 import Bonsai.Html.Internal as HI
 import Control.Monad.Free (Free, substFree)
-import Data.Array as Array
 import Data.CatList as CL
 import Data.Foldable (for_, intercalate)
 import Data.Foreign (Foreign, F)
 import Data.Function.Memoize (memoize2)
 import Data.Maybe (Maybe, fromMaybe, maybe)
-import Data.Tuple (Tuple(..), fst, snd)
+import Data.Tuple (fst, snd)
 
 
 type NameStack =
