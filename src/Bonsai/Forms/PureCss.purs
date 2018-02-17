@@ -109,7 +109,7 @@ alignedForm idPrefix model content =
     transformF ns (CustomControlF control x) = do
       let n = intercalate "_" (CL.snoc ns control.name)
       let id = prefix n
-      transformControl n id control.label control.message control.markup
+      transformControl n id control.label control.message (control.markup n)
       pure x
 
     transformControl n id label message markup = do

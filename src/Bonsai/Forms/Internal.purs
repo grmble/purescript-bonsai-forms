@@ -70,7 +70,7 @@ type CustomControl =
   { name :: Name
   , label :: String
   , message :: Maybe String
-  , markup :: Markup FormMsg
+  , markup :: Name -> Markup FormMsg
   }
 
 data InputTyp
@@ -166,7 +166,7 @@ instance hasAttributeFormDef :: HasAttribute (Free FormDefF Unit) (VD.Property F
       go (InputF rec x) = InputF (rec { attribs = CL.snoc rec.attribs prop }) x
       go (GroupedF rec x) = GroupedF (rec { attribs = CL.snoc rec.attribs prop }) x
       go (CustomMarkupF markup x) = CustomMarkupF (markup HI.! prop) x
-      go (CustomControlF rec x) = CustomControlF (rec { markup = rec.markup HI.! prop }) x
+      go (CustomControlF rec x) = CustomControlF (rec { markup = map (\m -> m HI.! prop) rec.markup }) x
       go (EmptyF x) = EmptyF x
 
 instance hasAttributeFormDefF :: HasAttribute (Free FormDefF Unit -> Free FormDefF Unit) (VD.Property FormMsg) where

@@ -28,22 +28,29 @@ module Bonsai.Forms
   , checkboxInput
   , radioInput
   , textareaInput
+
   , customMarkup
   , customControl
+  , simpleSelectMarkup
+  , simpleSelect
   )
 where
 
 import Prelude
 
 import Bonsai.Forms.Internal (FormDef, FormDefF(..), InputTyp(..), Name)
-import Bonsai.Forms.Internal (Name, withAttribute, (!)) as InternalExports
-import Bonsai.Forms.Model (FormMsg)
+import Bonsai.Forms.Internal (FormDef, Name, withAttribute, (!)) as InternalExports
+import Bonsai.Forms.Model (FormModel, FormMsg, lookupChecked, targetSelectedOptions)
 import Bonsai.Forms.Model (FormMsg, FormModel) as ModelExports
-import Bonsai.Html (Markup)
+import Bonsai.Html as H
+import Bonsai.Html.Attributes as A
+import Bonsai.Html.Events as E
+import Bonsai.Types (Cmd(..))
 import Control.Monad.Free (hoistFree, liftF)
 import Data.CatList as CL
+import Data.Foldable (class Foldable, for_)
 import Data.Maybe (Maybe(..))
-import Data.Tuple (Tuple)
+import Data.Tuple (Tuple, fst, snd)
 
 --
 --
@@ -170,6 +177,9 @@ checkboxInput =
   grouped ICheckbox
 
 -- | HTML radio control
+-- |
+-- | You have to provide a default value in the model for this,
+-- | or the control is going to start out-of-sync with the model
 radioInput :: Name -> Array (Tuple Name String) -> FormDef
 radioInput =
   grouped IRadio
@@ -192,7 +202,7 @@ textareaInput =
 -- | depends a lot on the DSL interpreter (aligned? compact?
 -- | pure css? bootstrap?), so this will tie the form definition
 -- | to that distinct use case.
-customMarkup :: Markup FormMsg -> FormDef
+customMarkup :: H.Markup FormMsg -> FormDef
 customMarkup m =
   liftF $ CustomMarkupF m unit
 
@@ -204,6 +214,57 @@ customMarkup m =
 -- | but unchanged except for the ID attribute - this will be set.
 -- |
 -- | You also also have to arrange for event handling.
-customControl :: Name -> String -> Markup FormMsg -> FormDef
+customControl :: Name -> String -> (Name -> H.Markup FormMsg) -> FormDef
 customControl name label markup =
   liftF $ CustomControlF { name, label, markup, message: Nothing } unit
+
+
+-- | Helper for simple select elements via customControl
+-- |
+-- | For the easy cases, where there are no optgroups and such.
+-- | The id will be set by `customControl`, you have to set
+-- | any required or multiple attributes.
+-- |
+-- | If required is true, you have to provide a default value in
+-- | the model, or the control and the model are going to start
+-- | out-of-sync.
+-- |
+-- |        customControl name label $
+-- |          -- if required is true, be sure to PROVIDE A DEFAULT VALUE in the model
+-- |          map (\m -> m H.! required true) $
+-- |              simpleSelectMarkup model [Tuple "o1" "Option 1", Tuple "o2" "Option 2"]
+simpleSelectMarkup
+  :: forall f
+  .  Foldable f
+  => FormModel
+  -> f (Tuple String String)
+  -> Name
+  -> H.Markup FormMsg
+simpleSelectMarkup model opts name =
+  H.select
+    H.! E.on "change" (map Cmd <<< targetSelectedOptions name)
+    $ do
+    -- option with empty value is so called "placeholder label option"
+    -- H.option H.! A.value "" $ H.text "Select one ..."
+    -- but works best WITHOUT "placeholder label option"
+    -- model has to default one value from the options though, like radio
+    for_ opts \opt ->
+      H.option H.! A.value (fst opt)
+        H.! A.selected (lookupChecked name (fst opt) model)
+        $ H.text (snd opt)
+
+
+-- | simple select control
+-- |
+-- | single select, not required
+simpleSelect
+  :: forall f
+  .  Foldable f
+  => Name
+  -> String
+  -> FormModel
+  -> f (Tuple String String)
+  -> FormDef
+simpleSelect name label model opts=
+  customControl name label $
+    simpleSelectMarkup model opts
