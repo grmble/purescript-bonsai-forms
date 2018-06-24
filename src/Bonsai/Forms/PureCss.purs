@@ -16,10 +16,10 @@ import Bonsai.Html.Internal as HI
 import Control.Monad.Free (Free, substFree)
 import Data.CatList as CL
 import Data.Foldable (for_, intercalate)
-import Data.Foreign (Foreign, F)
 import Data.Function.Memoize (memoize2)
 import Data.Maybe (Maybe, fromMaybe, maybe)
 import Data.Tuple (fst, snd)
+import Foreign (Foreign, F)
 
 
 type NameStack =
@@ -162,17 +162,17 @@ alignedForm idPrefix model content =
         idPrefix
 
 
-constFormOK :: forall eff. Foreign -> F (Cmd eff FormMsg)
+constFormOK :: Foreign -> F (Cmd FormMsg)
 constFormOK =
   constHandler FormOK
 
-constFormCancel :: forall eff. Foreign -> F (Cmd eff FormMsg)
+constFormCancel :: Foreign -> F (Cmd FormMsg)
 constFormCancel =
   constHandler FormCancel
 
 -- memoizable handler for text input events
 -- the first parameter is the for id, since it must be unique on the page
 -- there should be no collisions
-formSingleHandler :: forall eff. String -> String -> Foreign -> F (Cmd eff FormMsg)
+formSingleHandler :: String -> String -> Foreign -> F (Cmd FormMsg)
 formSingleHandler _ name =
   targetValueHandler (FormSingle name)

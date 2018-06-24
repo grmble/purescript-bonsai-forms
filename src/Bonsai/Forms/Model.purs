@@ -26,14 +26,14 @@ import Prelude
 import Bonsai (Cmd)
 import Control.Plus (empty)
 import Data.Array as A
-import Data.Foreign (F, Foreign, readInt, readString)
-import Data.Foreign.Index ((!))
 import Data.List as L
 import Data.List.NonEmpty as NEL
 import Data.Map as M
 import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
+import Foreign (F, Foreign, readInt, readString)
+import Foreign.Index ((!))
 
 --
 --
@@ -86,7 +86,7 @@ updatePlain msg model =
       model
 
 -- | update function for a FormModel
-updateForm :: forall eff. FormMsg -> FormModel -> Tuple (Cmd eff FormMsg) FormModel
+updateForm :: FormMsg -> FormModel -> Tuple (Cmd FormMsg) FormModel
 updateForm =
   map (Tuple empty) <<< updatePlain
 
