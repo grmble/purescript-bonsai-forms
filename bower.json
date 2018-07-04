@@ -7,7 +7,7 @@
     "output"
   ],
   "dependencies": {
-    "purescript-bonsai-html": "grmble/purescript-bonsai-html#purs_0_12",
+    "purescript-bonsai-html": "grmble/purescript-bonsai-html#master",
     "purescript-memoize": "^5.0.0"
   },
   "devDependencies": {
